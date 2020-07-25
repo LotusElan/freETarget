@@ -36,7 +36,7 @@ void self_test(void)
 {
   unsigned int dip;
 
-  dip = (read_DIP() & 0x0E) >> 1;
+  dip = (read_DIP() >> 1) & 7;
   
 /*
  *  Update the timer
@@ -50,13 +50,13 @@ void self_test(void)
   {
     case 0:           // Jumpers x-x-x  Flash LEDs and show revision
       Serial.print("\nBD Rev:"); Serial.print(revision());     
-      Serial.print("   Temperature: "); Serial.print(temperature_C()) ;  Serial.print("'C");
+      Serial.print("   Temperature: "); Serial.print(temperature_C()) ;  Serial.print("'C"); speed_of_sound(temperature_C());
       digitalWrite(LED_S, (~tick) & 1);
       digitalWrite(LED_X, (~tick) & 2);
       digitalWrite(LED_Y, (~tick) & 4);
       delay(500);
       break;
-      
+
     case 1:           // Jumpers x-x-I  Show the cunter registes
       arm_counters();
       stop_counters();
@@ -70,20 +70,22 @@ void self_test(void)
       
     case 3:
 
-      break;
-
     case 4:
-      break;
+
 
     case 5:
 
-      break;
 
     case 6:
-      break;
+
       
     case 7:
-
+      Serial.print("\nBD Rev:"); Serial.print(revision()); Serial.print(" DIP:"); Serial.print(dip);    
+      Serial.print("   Temperature: "); Serial.print(temperature_C()) ;  Serial.print("'C"); speed_of_sound(temperature_C());
+      digitalWrite(LED_S, (~tick) & 1);
+      digitalWrite(LED_X, (~tick) & 2);
+      digitalWrite(LED_Y, (~tick) & 4);
+      delay(500);
       break;
   }
 
@@ -139,15 +141,25 @@ void show_counters(void)
  * 
  * Read and display as a 4 channel scope trace
  * 
+ *----------------------------------------------------------------
+ *
+ *  The output appears as a 4 channel O'scope displaying the LSBs
+ *  of the analog channels.  
+ *  
+ *  Playing a music file from a smartphone into the microphone of
+ *  each channel will show the sound appearing on the display
+ *  
  *--------------------------------------------------------------*/
 unsigned int channel[] = {NORTH_ANA, EAST_ANA, SOUTH_ANA, WEST_ANA};
-#define SCALE         0.1        // Multiply volts by 64
-#define FULL_SCALE    20        // Limit to 16 values
+#define SCALE         0.1         // Multiply volts by 64
+#define FULL_SCALE    32          // Limit to 16 values
+#define DECAY_RATE    16          // Decay rate for peak detection
+unsigned int max_input[4];
 
 void show_analog(void)
 {
   unsigned int i, j, k;
-
+  char o_scope[FULL_SCALE];
 /*
  * Output as a scope trace
  */
@@ -156,18 +168,31 @@ void show_analog(void)
    for (i=N; i != W + 1; i++)
   {
     Serial.print(which_one[i]);
-    j = analogRead(channel[i]) * SCALE;
+    if ( max_input[i] != 0 )
+    {
+      max_input[i]--;
+    }
+    
+    j = analogRead(channel[i]) * SCALE;           // Read and scale the input
+    if ( (j * DECAY_RATE) > max_input[i] )        // Remember the max
+    {
+      max_input[i] = j * DECAY_RATE;
+    }
+          
     if ( j > FULL_SCALE-1 )
     {
       j = FULL_SCALE-1;
     }
-    for ( k=0; k != FULL_SCALE; k++)
+    
+    for ( k=0; k != FULL_SCALE; k++)              // Clear the oscope
     {
-      if ( k == j )
-        Serial.print("*");
-      else
-        Serial.print(" ");
+      o_scope[k] = ' ';
     }
+    o_scope[j] = '*';                             // Put in the trace
+    o_scope[(max_input[i]) / DECAY_RATE] = '#';
+    o_scope[FULL_SCALE-1] = 0;
+    
+    Serial.print(o_scope);                        // Display this channel
   }
 
  /*

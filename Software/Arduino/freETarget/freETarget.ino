@@ -5,8 +5,8 @@
  * 
  * Software to run the Air-Rifle / Small Bore Electronic Target
  * 
- *----------------------------------------------------------------
- *
+ *--------------------------------------------------------------
+ *--
  */
 #include "freETarget.h"
 #include "gpio.h"
@@ -16,7 +16,7 @@
 history_t history;
 double        s_of_sound;        // Speed of sound
 unsigned int shot = 0;
-  
+
 /*----------------------------------------------------------------
  * 
  * void setup()
@@ -63,14 +63,16 @@ void setup()
 #define WASTE  (REDUCE+1)       // Wait for the shot to end
 #define SHOW_ERROR (WASTE+1)    // Got a trigger, but was defective
 
+unsigned int state = SET_MODE;
+unsigned long now;
+double x_time, y_time;        // Location in time
+unsigned int running_mode;
+unsigned int sensor_status;   // Record which sensors contain valid data
+unsigned int location;        // Sensor location 
+
 void loop() 
 {
-  unsigned int state = SET_MODE;
-  unsigned long now;
-  double x_time, y_time;        // Location in time
-  unsigned int running_mode;
-  unsigned int sensor_status;   // Record which sensors contain valid data
-  unsigned int location;        // Sensor location 
+    read_JSON();
 
 #if ( SAMPLE_CALCULATIONS != 0 )
   unit_test();
@@ -81,6 +83,7 @@ void loop()
  */
   switch (state)
   {
+
 /*
  *  Check for special operating modes
  */

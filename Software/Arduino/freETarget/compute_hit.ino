@@ -11,6 +11,7 @@
 #include "freETarget.h"
 #include "compute_hit.h"
 #include "analog_io.h"
+#include "json.h"
 
 #define THRESHOLD (0.001)
 
@@ -47,10 +48,10 @@ double speed_of_sound(double temperature)
 
   speed = (331.3d + 0.606d * temperature) * 1000.0d / 1000000.0d; 
   
-  if ( read_DIP() & VERBOSE_TRACE )
+  if ( read_DIP() & (VERBOSE_TRACE | SELF_TEST) )
     {
     Serial.print("\n\rSpeed of sound: "); Serial.print(speed); Serial.print("mm/us");
-    Serial.print("  Worst case delay: "); Serial.print(RADIUS * 2.0 / speed * OSCILLATOR_MHZ); Serial.print(" counts");
+    Serial.print("  Worst case delay: "); Serial.print(json_sensor_dia / speed * OSCILLATOR_MHZ); Serial.print(" counts");
     }
 
   return speed;  
@@ -76,11 +77,12 @@ double speed_of_sound(double temperature)
 void init_sensors(void)
 {
   s_of_sound = speed_of_sound(temperature_C());
-  length_c = sqrt(2.0d) * RADIUS / s_of_sound * OSCILLATOR_MHZ;
+  s_of_sound = speed_of_sound(temperature_C());
+  length_c = sqrt(2.0d) * (json_sensor_dia / 2.0) / s_of_sound * OSCILLATOR_MHZ;
   
   s[N].index = N;
   s[N].x = 0;
-  s[N].y = RADIUS / s_of_sound * OSCILLATOR_MHZ;
+  s[N].y = (json_sensor_dia / 2) / s_of_sound * OSCILLATOR_MHZ;
 
   s[E].index = E;
   s[E].x = s[N].y;

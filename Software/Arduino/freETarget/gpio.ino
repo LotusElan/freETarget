@@ -265,15 +265,18 @@ void stop_counters(void)
  * The word is complimented to return a 1 for every
  * jumper that is installed.
  * 
- * Return 0xF0 to allow for compile time testing
+ * OR in the json_dip_switch to allow remote testing
+ * OR in  0xF0 to allow for compile time testing
  *-----------------------------------------------------*/
 unsigned int read_DIP(void)
 {
   unsigned int return_value;
   
-  return_value =  (digitalRead(DIP_A) << 0) + (digitalRead(DIP_B) << 1) + (digitalRead(DIP_C) << 2) + (digitalRead(DIP_D) << 3);
-
-  return (~return_value) & 0x0f | 0xF0;
+  return_value =  (~((digitalRead(DIP_A) << 0) + (digitalRead(DIP_B) << 1) + (digitalRead(DIP_C) << 2) + (digitalRead(DIP_D) << 3))) & 0x0F;  // DIP Switch
+  return_value |= json_dip_switch;  // JSON message
+  return_value |= 0xF0;             // COMPILE TIME
+  
+  return return_value;
 }  
 
 /*
